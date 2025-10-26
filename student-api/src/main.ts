@@ -12,7 +12,10 @@ async function bootstrap() {
     .setTitle('Student CRUD API')
     .setDescription('Simple CRUD for students')
     .setVersion('1.0')
+<<<<<<< HEAD
     .addBearerAuth()
+=======
+>>>>>>> eb58b832d3fc5c1d01a380dd3875c0aa0ad01e0b
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
