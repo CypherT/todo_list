@@ -1,25 +1,40 @@
-import { Body, Controller, Post } from '@nestjs/common';
-import { ApiBody, ApiTags } from '@nestjs/swagger';
-import { AuthService } from './auth.service';
-import { LoginDto } from './dto/login.dto';
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
+import { AuthService, UserResponse } from './auth.service'; // Import UserResponse từ service
 import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
 
-@ApiTags('auth')
 @Controller('auth')
 export class AuthController {
   constructor(private auth: AuthService) {}
 
   @Post('register')
-  @ApiBody({ type: RegisterDto })
-  async register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto.email.trim(), dto.password, dto.full_name?.trim());
+  @HttpCode(HttpStatus.CREATED)
+  @UsePipes(new ValidationPipe()) // Validate DTO
+  async register(@Body() dto: RegisterDto): Promise<UserResponse> {
+    // Return type rõ
+    return this.auth.register(
+      dto.email.trim(),
+      dto.password,
+      dto.full_name?.trim(),
+    );
   }
 
   @Post('login')
-  @ApiBody({ type: LoginDto })
-  async login(@Body() dto: LoginDto) {
+  @HttpCode(HttpStatus.OK)
+  @UsePipes(new ValidationPipe())
+  async login(
+    @Body() dto: LoginDto,
+  ): Promise<{ access_token: string; user: UserResponse }> {
     const user = await this.auth.validate(dto.email.trim(), dto.password);
     const access_token = this.auth.sign(user);
-    return { access_token, token_type: 'Bearer', expires_in: 36000 };
+    return { access_token, user };
   }
 }

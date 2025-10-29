@@ -1,39 +1,22 @@
+// src/app.module.ts (thêm vào imports)
 import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; // Để đọc .env.dev
 import { TypeOrmModule } from '@nestjs/typeorm';
-import * as dotenv from 'dotenv';
-import { StudentsModule } from './students/students.module';
-import { Student } from './students/student.entity';
-<<<<<<< HEAD
-import { AuthModule } from './auth/auth.module';
-import { UsersModule } from './user/user.module';
-import { User } from './user/user.entity';
-=======
->>>>>>> eb58b832d3fc5c1d01a380dd3875c0aa0ad01e0b
-
-dotenv.config();
+import { TypeOrmConfigService } from './config/typeorm.config'; // Import file mới
+import { AuthModule } from './auth/auth.module'; // Nếu có
+import { TodosModule } from './todos/todos.module'; // Nếu có
 
 @Module({
   imports: [
-    TypeOrmModule.forRoot({
-      type: 'mysql',
-      host: process.env.DB_HOST,
-      port: Number(process.env.DB_PORT) || 3306,
-      username: process.env.DB_USER,
-      password: process.env.DB_PASS,
-      database: process.env.DB_NAME,
-<<<<<<< HEAD
-      entities: [Student,User],
-      synchronize: false, // DEV: tự tạo bảng. Prod nên dùng migration
+    ConfigModule.forRoot({
+      envFilePath: '.env.dev', // Đọc từ .env.dev
+      isGlobal: true, // Dùng toàn cục
     }),
-    StudentsModule,
-    AuthModule,
-    UsersModule,
-=======
-      entities: [Student],
-      synchronize: false, // DEV: tự tạo bảng. Prod nên dùng migration
+    TypeOrmModule.forRootAsync({
+      useClass: TypeOrmConfigService, // Dùng service config
     }),
-    StudentsModule,
->>>>>>> eb58b832d3fc5c1d01a380dd3875c0aa0ad01e0b
+    AuthModule, // Import modules khác
+    TodosModule,
   ],
 })
 export class AppModule {}

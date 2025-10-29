@@ -1,28 +1,21 @@
+// src/auth/auth.module.ts
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { PassportModule } from '@nestjs/passport';
-import { UsersModule } from '../user/user.module';
-import { AuthService } from './auth.service';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthController } from './auth.controller';
-import { JwtStrategy } from './jwt.strategy';
-
-function getExpiresInSeconds(): number {
-  const raw = process.env.JWT_EXPIRES ?? '3600';
-  const n = Number(raw);
-  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 3600; 
-}
+import { AuthService } from './auth.service';
+import { User } from '../user/user.entity';
 
 @Module({
   imports: [
-    UsersModule,
-    PassportModule,
+    TypeOrmModule.forFeature([User]),
     JwtModule.register({
-      secret: 'dev_secret',
-      signOptions: { expiresIn: 36000 },
+      secret: 'your-secret-key', // Thay bằng env var: process.env.JWT_SECRET
+      signOptions: { expiresIn: '1h' },
     }),
   ],
-  providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
+  providers: [AuthService],
   exports: [AuthService],
 })
 export class AuthModule {}

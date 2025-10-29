@@ -1,16 +1,22 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn } from 'typeorm';
+// src/user/user.entity.ts
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
+import { Todo } from '../todos/todo.entity'; // Import Todo từ đúng path (không circular nữa)
 
-@Entity('users')
+@Entity()
 export class User {
-  @PrimaryGeneratedColumn() id: number;
+  @PrimaryGeneratedColumn()
+  id: number;
 
-  @Column({ unique: true }) email: string;
+  @Column()
+  full_name: string; // Giả sử dùng 'full_name' thay vì 'name'
 
-  @Column() password_hash: string;
+  @Column({ unique: true })
+  email: string;
 
-  @Column({ nullable: true }) full_name?: string;
+  @Column({ name: 'password_hash' }) // <-- Thêm 'name: 'password_hash'' để map column DB, nhưng property là 'password' cho type
+  password: string; // Property TS là 'password', DB column là 'password_hash'
 
-  @Column({ default: 'teacher' }) role: 'admin'|'teacher'|'staff';
-
-  @CreateDateColumn() created_at: Date;
+  // Fix relation: Sử dụng arrow function để infer type đúng
+  @OneToMany(() => Todo, (todo: Todo) => todo.user) // <-- Chỉ định type 'Todo' cho param để tránh 'unknown'
+  todos: Todo[];
 }

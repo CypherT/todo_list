@@ -1,27 +1,55 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import * as bcrypt from 'bcrypt';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../user/user.service';
+import { User } from '../user/user.entity';
+import * as bcrypt from 'bcrypt';
+
+// Export interface để controller dùng được
+export interface UserResponse {
+  id: number;
+  full_name: string;
+  email: string;
+}
 
 @Injectable()
 export class AuthService {
-  constructor(private users: UsersService, private jwt: JwtService) {}
+  constructor(
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    private jwtService: JwtService,
+  ) {}
 
-  async register(email: string, password: string, full_name?: string) {
+  async register(
+    email: string,
+    password: string,
+    full_name: string,
+  ): Promise<UserResponse> {
     const hash = await bcrypt.hash(password, 10);
-    const user = await this.users.create({ email, password_hash: hash, full_name });
-    return { id: user.id, email: user.email };
+    const userData = {
+      // Dùng var riêng để tránh conflict với destructuring sau
+      email,
+      password: hash,
+      full_name,
+    };
+    const user = this.usersRepository.create(userData);
+    const savedUser = await this.usersRepository.save(user);
+    // Destructuring ở đây, không conflict vì 'password' là property của savedUser
+    const { password: _, ...result } = savedUser; // Đổi tên alias thành '_' để rõ ràng, tránh duplicate sense
+    return result as UserResponse;
   }
 
-  async validate(email: string, password: string) {
-    const user = await this.users.findByEmail(email);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-    const ok = await bcrypt.compare(password, user.password_hash);
-    if (!ok) throw new UnauthorizedException('Invalid credentials');
-    return user;
+  async validate(email: string, password: string): Promise<UserResponse> {
+    const user = await this.usersRepository.findOne({ where: { email } });
+    if (user && (await bcrypt.compare(password, user.password))) {
+      const { password: _, ...result } = user; // Tương tự, alias để clean
+      return result as UserResponse;
+    }
+    throw new UnauthorizedException('Invalid credentials');
   }
 
-  sign(user: { id: number; email: string; role?: string }) {
-    return this.jwt.sign({ sub: user.id, email: user.email, role: user.role ?? 'teacher' });
+  sign(user: UserResponse): string {
+    const payload = { sub: user.id, email: user.email };
+    return this.jwtService.sign(payload);
   }
 }
